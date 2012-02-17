@@ -21,6 +21,7 @@ Usage :
 - color-index : Can take three values, either 0, 1, 2 which represent Red, Green, Blue respectively.
 
 Outputs :
+
     The script will output 2 files. One PPM file, and one FITS file. The PPM file is useless if you don’t need it, but the script doesn’t delete it. I’ve left it on purpose, since the script you’re going to call cr2fits can easily handle the job. (ex: your shell script?) The FITS file is what we need, the color channel is also added to the name of the output file.
 
 
