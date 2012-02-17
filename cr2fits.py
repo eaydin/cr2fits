@@ -17,8 +17,7 @@ version = "1.0.3"
 
 try :    
     from copy import deepcopy
-    import numpy
-    import pyfits, subprocess, sys, re, datetime, math
+    import numpy, pyfits, subprocess, sys, re, datetime, math
     
 except :
     print("ERROR : Missing some libraries!")
