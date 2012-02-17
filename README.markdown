@@ -8,12 +8,15 @@ A script to convert RAW images (canon, nikon etc.) to FITS images. I think this'
 It extracts only one color channel of the RAW image, and writes the necessary EXIF information to the FITS header.
 
 Dependencies :
+
 - Python 2.6.x or later. (Including Python 3.2)
 - PyFITS : You can get it with your package manager, or here : http://packages.python.org/pyfits/
 - dcraw : Try getting the latest version of this. Usually the ones in repositories is not the latest so it's possible that it'll convert your RAW images differently, corrupted. Get the latest version here : http://www.cybercom.net/~dcoffin/dcraw/
 
 Usage : 
+
 `cr2fits.py <cr2-filename> <color-index>`
+
 - cr2-filename : This will obviously be the name of the file to convert.
 - color-index : Can take three values, either 0, 1, 2 which represent Red, Green, Blue respectively.
 
