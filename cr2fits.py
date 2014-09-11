@@ -277,7 +277,7 @@ if colorState == False :
 print("Reading file %s...") % cr2FileName
 try : 
     #Converting the CR2 to PPM
-    p = subprocess.Popen(["dcraw","-6",cr2FileName]).communicate()[0]
+    p = subprocess.Popen(["dcraw","-6","-j","-W",cr2FileName]).communicate()[0]
 
     #Getting the EXIF of CR2 with dcraw
     p = subprocess.Popen(["dcraw","-i","-v",cr2FileName],stdout=subprocess.PIPE)
