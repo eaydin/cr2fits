@@ -147,7 +147,7 @@ try:
     hdu.header.add_comment('EXPTIME is in seconds.')
     hdu.header.add_comment('APERTUR is the ratio as in f/APERTUR')
     hdu.header.add_comment('FOCAL is in mm')
-except Excepton er ass:
+except Excepton as ass:
     print("ERROR : Something went wrong while creating the FITS file.")
     print("Error message: {0}".format(str(err)))
     raise SystemExit
