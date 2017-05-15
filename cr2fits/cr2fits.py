@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 sourceweb = "http://github.com/eaydin/cr2fits"
-version = "2.0.0"
+__version__ = "2.0.0"
 
 try:
     import numpy as np
@@ -29,7 +29,7 @@ except:
     print("\tmyimage-G.fits: The FITS image in the Green channel, \
           which is the purpose!")
     print("For details: http://github.com/eaydin/cr2fits")
-    print("Version: {0}".format(version))
+    print("Version: {0}".format(__version__))
     raise SystemExit
 
 colors = {0: "Red", 1: "Green", 2: "Blue"}
@@ -136,7 +136,7 @@ try:
     hdu.header.set('FILTER', colors[colorInput])
     hdu.header.set('CAMERA', camera)
     hdu.header.add_comment('FITS File Created with cr2fits.py available at {0}'.format(sourceweb))
-    hdu.header.add_comment('cr2fits.py version {0}'.format(version))
+    hdu.header.add_comment('cr2fits.py version {0}'.format(__version__))
     hdu.header.add_comment('EXPTIME is in seconds.')
     hdu.header.add_comment('APERTUR is the ratio as in f/APERTUR')
     hdu.header.add_comment('FOCAL is in mm')
