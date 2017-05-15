@@ -11,7 +11,12 @@ sourceweb = "http://github.com/eaydin/cr2fits"
 version = "1.0.4"
 
 try:
-    import numpy, pyfits, subprocess, sys, re, datetime
+    import numpy as np
+    import subprocess
+    import sys
+    import re
+    import datetime
+    from astropy.io import fits
 
 except Exception as err:
     print("Error: Missing some libraries!")
@@ -43,10 +48,10 @@ if not colorState:
 print("Reading file {0}...".format(cr2FileName))
 try:
     # Converting the CR2 to PPM
-    p = subprocess.Popen(["dcraw","-6","-j","-W",cr2FileName]).communicate()[0]
+    p = subprocess.Popen(["dcraw", "-6", "-j", "-W", cr2FileName]).communicate()[0]
 
     # Getting the EXIF of CR2 with dcraw
-    p = subprocess.Popen(["dcraw","-i","-v",cr2FileName],stdout=subprocess.PIPE)
+    p = subprocess.Popen(["dcraw", "-i", "-v", cr2FileName], stdout=subprocess.PIPE)
     cr2header = p.communicate()[0]
 
     # Catching the Timestamp
@@ -102,51 +107,57 @@ except Exception as err:
     raise SystemExit
 
 print("Reading the PPM output...")
-try :
-    #Reading the PPM
+try:
+    # Reading the PPM
     ppm_name = cr2FileName.split('.')[0] + '.ppm'
     im_ppm = NetpbmFile(ppm_name).asarray()
-except :
+except Exception as err:
     print("ERROR : Something went wrong while reading the PPM file.")
+    print("Error message: {0}".format(str(err)))
     raise SystemExit
 
-print("Extracting %s color channels... (may take a while)" % colors[colorInput])
-try :
-    #Extracting the Green Channel Only
-    im_green = numpy.zeros((im_ppm.shape[0],im_ppm.shape[1]),dtype=numpy.uint16)
-    for row in xrange(0,im_ppm.shape[0]) :
-        for col in xrange(0,im_ppm.shape[1]) :
-            im_green[row,col] = im_ppm[row,col][colorInput]
-except :
-    print("ERROR : Something went wrong while extracting color channels.")
+print("Extracting {0} color channels... (may take a while)".format(colors[colorInput]))
+
+try:
+    # Extracting the Green Channel Only
+    im_green = numpy.zeros((im_ppm.shape[0], im_ppm.shape[1]), dtype=numpy.uint16)
+    for row in xrange(0, im_ppm.shape[0]):
+        for col in xrange(0, im_ppm.shape[1]):
+            im_green[row, col] = im_ppm[row, col][colorInput]
+except Exception as err:
+    print("ERROR: Something went wrong while extracting color channels.")
+    print("Error message: {0}".format(str(err)))
     raise SystemExit
 
 print("Creating the FITS file...")
-try :
-#Creating the FITS File
-    hdu = pyfits.PrimaryHDU(im_green)
-    hdu.header.set('OBSTIME',date)
-    hdu.header.set('EXPTIME',shutter)
-    hdu.header.set('APERTUR',aperture)
-    hdu.header.set('ISO',iso)
-    hdu.header.set('FOCAL',focal)
-    hdu.header.set('ORIGIN',original_file)
-    hdu.header.set('FILTER',colors[colorInput])
-    hdu.header.set('CAMERA',camera)
-    hdu.header.add_comment('FITS File Created with cr2fits.py available at %s'%(sourceweb))
-    hdu.header.add_comment('cr2fits.py version %s'%(version))
+
+try:
+    # Creating the FITS File
+    hdu = fits.PrimaryHDU(im_green)
+    hdu.header.set('OBSTIME', date)
+    hdu.header.set('EXPTIME', shutter)
+    hdu.header.set('APERTUR', aperture)
+    hdu.header.set('ISO', iso)
+    hdu.header.set('FOCAL', focal)
+    hdu.header.set('ORIGIN', original_file)
+    hdu.header.set('FILTER', colors[colorInput])
+    hdu.header.set('CAMERA', camera)
+    hdu.header.add_comment('FITS File Created with cr2fits.py available at {0}'.format(sourceweb))
+    hdu.header.add_comment('cr2fits.py version {0}'.format(version))
     hdu.header.add_comment('EXPTIME is in seconds.')
     hdu.header.add_comment('APERTUR is the ratio as in f/APERTUR')
     hdu.header.add_comment('FOCAL is in mm')
-except :
+except Excepton er ass:
     print("ERROR : Something went wrong while creating the FITS file.")
+    print("Error message: {0}".format(str(err)))
     raise SystemExit
 
 print("Writing the FITS file...")
-try :
+try:
     hdu.writeto(cr2FileName.split('.')[0]+"-"+colors[colorInput][0]+'.fits')
-except :
-    print("ERROR : Something went wrong while writing the FITS file. Maybe it already exists?")
+except Exception as err:
+    print("ERROR: Something went wrong while writing the FITS file. Maybe it already exists?")
+    print("Error message: {0}".format(str(err)))
     raise SystemExit
 
 print("Conversion successful!")
