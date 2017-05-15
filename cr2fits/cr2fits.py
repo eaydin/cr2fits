@@ -11,6 +11,7 @@ try:
     import re
     import datetime
     from astropy.io import fits
+    from netpbmfile import NetpbmFile
 
 except Exception as err:
     print("Error: Missing some libraries!")
@@ -140,7 +141,7 @@ try:
     hdu.header.add_comment('EXPTIME is in seconds.')
     hdu.header.add_comment('APERTUR is the ratio as in f/APERTUR')
     hdu.header.add_comment('FOCAL is in mm')
-except Excepton as ass:
+except Exception as err:
     print("ERROR : Something went wrong while creating the FITS file.")
     print("Error message: {0}".format(str(err)))
     raise SystemExit
