@@ -34,7 +34,6 @@ except:
 
 colors = {0: "Red", 1: "Green", 2: "Blue"}
 colorState = any([True for i in colors.keys() if i == colorInput])
-/home/eaydin/devel/cr2fits/cr2fits/cr2fits.py
 if not colorState:
     print("ERROR: Color value can be set as 0:Red, 1:Green, 2:Blue.")
     raise SystemExit
