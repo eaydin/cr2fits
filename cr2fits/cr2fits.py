@@ -114,7 +114,7 @@ print("Extracting {0} color channels... (may take a while)".format(colors[colorI
 
 try:
     # Extracting the Green Channel Only
-    im_green = numpy.zeros((im_ppm.shape[0], im_ppm.shape[1]), dtype=numpy.uint16)
+    im_green = np.zeros((im_ppm.shape[0], im_ppm.shape[1]), dtype=np.uint16)
     for row in xrange(0, im_ppm.shape[0]):
         for col in xrange(0, im_ppm.shape[1]):
             im_green[row, col] = im_ppm[row, col][colorInput]
