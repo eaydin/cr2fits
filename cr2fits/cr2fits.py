@@ -1,14 +1,8 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# This script is redistributable in anyway.
-# But it includes netpbmfile.py which is NOT written by M. Emre Aydin.
-# It has its own copyright and it has been stated in the source code.
-# BUT, there's nothing to worry about usage, laws etc.
-# Enjoy.
-
 sourceweb = "http://github.com/eaydin/cr2fits"
-version = "1.0.4"
+version = "2.0.0"
 
 try:
     import numpy as np
@@ -40,7 +34,7 @@ except:
 
 colors = {0: "Red", 1: "Green", 2: "Blue"}
 colorState = any([True for i in colors.keys() if i == colorInput])
-
+/home/eaydin/devel/cr2fits/cr2fits/cr2fits.py
 if not colorState:
     print("ERROR: Color value can be set as 0:Red, 1:Green, 2:Blue.")
     raise SystemExit
