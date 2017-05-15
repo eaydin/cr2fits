@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 
 sourceweb = "http://github.com/eaydin/cr2fits"
 version = "2.0.0"
