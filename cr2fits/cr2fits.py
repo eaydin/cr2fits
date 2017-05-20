@@ -51,8 +51,7 @@ print("Reading file {0}...".format(cr2FileName))
 try:
     # Converting the CR2 to PPM
 
-    ppm = subprocess.check_output(["dcraw", "-6", "-j", "-W", "-c", cr2FileName])
-    ppm_bytes = BytesIO(ppm)
+    ppm_bytes = BytesIO(subprocess.check_output(["dcraw", "-6", "-j", "-W", "-c", cr2FileName]))
 
     # Getting the EXIF of CR2 with dcraw
     p = subprocess.Popen(["dcraw", "-i", "-v", cr2FileName], stdout=subprocess.PIPE)
