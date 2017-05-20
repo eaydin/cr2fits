@@ -1,6 +1,10 @@
 #!/usr/bin/python
+"""
+Convert RAW Camera images such as Canon Raw or Nikon Raw to FITS
+Details at https://github.com/eaydin/cr2fits
+"""
 
-sourceweb = "http://github.com/eaydin/cr2fits"
+sourceweb = "https://github.com/eaydin/cr2fits"
 __version__ = "2.0.0"
 
 try:
