@@ -50,8 +50,6 @@ try:
     ppm = subprocess.check_output(["dcraw", "-6", "-j", "-W", "-c", cr2FileName])
     ppm_bytes = BytesIO(ppm)
 
-    p = subprocess.Popen(["dcraw", "-6", "-j", "-W", cr2FileName]).communicate()[0]
-
     # Getting the EXIF of CR2 with dcraw
     p = subprocess.Popen(["dcraw", "-i", "-v", cr2FileName], stdout=subprocess.PIPE)
     cr2header = p.communicate()[0]
