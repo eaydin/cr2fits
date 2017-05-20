@@ -8,12 +8,24 @@ sourceweb = "https://github.com/eaydin/cr2fits"
 __version__ = "2.0.0"
 
 try:
+    import pyfits as fits
+    pyfits_loaded = True
+except ImportError:
+    pyfits_loaded = False
+
+if not pyfits_loaded:
+    try:
+        from astopy.io import fits
+    except ImportError:
+        print("Error: Missing module. Either install PyFITS or Astropy")
+        raise SystemExit
+
+try:
     import numpy as np
     import subprocess
     import sys
     import re
     import datetime
-    from astropy.io import fits
     from netpbmfile import NetpbmFile
     from io import BytesIO
 
