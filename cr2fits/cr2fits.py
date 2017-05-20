@@ -15,6 +15,7 @@ try:
     import datetime
     from astropy.io import fits
     from netpbmfile import NetpbmFile
+    from io import BytesIO
 
 except Exception as err:
     print("Error: Missing some libraries!")
@@ -45,6 +46,10 @@ if not colorState:
 print("Reading file {0}...".format(cr2FileName))
 try:
     # Converting the CR2 to PPM
+
+    ppm = subprocess.check_output(["dcraw", "-6", "-j", "-W", "-c", cr2FileName])
+    ppm_bytes = BytesIO(ppm)
+
     p = subprocess.Popen(["dcraw", "-6", "-j", "-W", cr2FileName]).communicate()[0]
 
     # Getting the EXIF of CR2 with dcraw
@@ -106,8 +111,7 @@ except Exception as err:
 print("Reading the PPM output...")
 try:
     # Reading the PPM
-    ppm_name = cr2FileName.split('.')[0] + '.ppm'
-    im_ppm = NetpbmFile(ppm_name).asarray()
+    im_ppm = NetpbmFile(ppm_bytes).asarray()
 except Exception as err:
     print("ERROR : Something went wrong while reading the PPM file.")
     print("Error message: {0}".format(str(err)))
