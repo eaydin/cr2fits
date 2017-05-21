@@ -266,7 +266,7 @@ class NetpbmFile(object):
         return header
 
 
-class CR2FITS(object):
+class cr2fits(object):
     """
     The main CR2FITS class.
 
@@ -438,7 +438,7 @@ class CR2FITS(object):
         returns
         -------
         filename: output filename (string).
-        
+
         """
         if colorindex == 3:
             channel_name = "RAW"
@@ -519,5 +519,5 @@ if __name__ == '__main__':
         print("ERROR: Color value can be set as 0:Red, 1:Green, 2:Blue, 3:Raw")
         raise SystemExit
 
-    cr2 = CR2FITS(cr2FileName, colorInput)
+    cr2 = cr2fits(cr2FileName, colorInput)
     cr2.convert()
