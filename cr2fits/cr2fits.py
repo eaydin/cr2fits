@@ -1,6 +1,7 @@
 #!/usr/bin/python
 """
-Convert RAW Camera images such as Canon Raw or Nikon Raw to FITS
+Convert RAW Camera images such as Canon Raw or Nikon Raw to FITS.
+
 Details at https://github.com/eaydin/cr2fits
 """
 
@@ -225,25 +226,25 @@ if __name__ == '__main__':
         colorInput = int(sys.argv[2])  # 0=R 1=G 2=B
     except:
         print("./cr2fits.py <cr2filename> <color-index>")
-        print("The <color-index> can take 3 values: 0,1,2 for R,G,B respectively.")
+        print("The <color-index> can take one of \
+              3 values: 0,1,2 for R,G,B respectively.")
         print("Example:\n\t$ ./cr2fits.py myimage.cr2 1")
         print("The above example will create 2 outputs.")
         print("\tmyimage.ppm: The PPM, which you can delete.")
         print("\tmyimage-G.fits: The FITS image in the Green channel, \
               which is the purpose!")
-        print("For details: http://github.com/eaydin/cr2fits")
+        print("For details: {0}".format(sourceweb))
         print("Version: {0}".format(__version__))
         raise SystemExit
 
     if sys.version_info[0] > 2:
         # A nasty hack to work around xrange / range diff for Python 2vs3
         xrange = range
-        if sys.version_info[0] > 2:
-            basestring = str
+        basestring = str
 
-            def unicode(x):
-                """Dirty hack for Python 3."""
-                return str(x, 'ascii')
+        def unicode(x):
+            """Dirty hack for Python 3."""
+            return str(x, 'ascii')
 
     colors = {0: "Red", 1: "Green", 2: "Blue"}
     colorState = any([True for i in colors.keys() if i == colorInput])
