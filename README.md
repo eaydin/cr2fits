@@ -42,7 +42,7 @@ The script will output the FITS file, added the color channel to the name of the
 
 # todo
 - Add support for configparser
-- Detect if output filename exists and give altenative name
+- Detect if output filename exists and give alternative name
 - Output name detection fails with dot's (.) in the name, fix it
 - Add support for 3D FITS files: an idea from the fork by [@mireianievas](https://github.com/mireianievas)
 - Add support for multiple file inputs
