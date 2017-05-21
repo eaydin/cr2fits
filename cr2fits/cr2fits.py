@@ -49,7 +49,7 @@ class CR2FITS(object):
         self.filename = filename
         self.colorInput = color
         self.pbm_bytes = None
-        self.colors = {0: "Red", 1: "Green", 2: "Blue"}
+        self.colors = {0: "Red", 1: "Green", 2: "Blue", 3: "Raw"}
 
         self.date = None
         self.shutter = None
@@ -64,9 +64,15 @@ class CR2FITS(object):
 
     def _read_cr2(self):
         """Run the dcraw command and read it as BytesIO."""
-        self.pbm_bytes = BytesIO(subprocess.check_output(["dcraw", "-W", "-j",
-                                                          "-6", "-c",
-                                                          self.filename]))
+        if self.colorInput == 3:
+            self.pbm_bytes = BytesIO(subprocess.check_output(["dcraw", "-D",
+                                                              "-6", "-W", "-j",
+                                                              "-c",
+                                                              self.filename]))
+        else:
+            self.pbm_bytes = BytesIO(subprocess.check_output(["dcraw", "-W",
+                                                              "-6", "-j", "-c",
+                                                              self.filename]))
 
     def _read_exif(self):
         """Read the EXIT data from RAW image."""
@@ -189,8 +195,11 @@ class CR2FITS(object):
         return hdu
 
     def _generate_destination(self, filename, colorindex):
-        return filename.split('.')[0] + "-" + \
-               self.colors[colorindex][0] + ".fits"
+        if colorindex == 3:
+            channel_name = "RAW"
+        else:
+            channel_name = self.colors[colorindex][0]
+        return filename.split('.')[0] + "-" + channel_name + ".fits"
 
     def write_fits(self, hdu, destination):
         """
@@ -213,7 +222,10 @@ class CR2FITS(object):
         self._read_cr2()
         self._read_exif()
         im_ppm = self.read_pbm(self.pbm_bytes)
-        im_channel = self.get_color(im_ppm, self.colorInput)
+        if self.colorInput == 3:
+            im_channel = im_ppm
+        else:
+            im_channel = self.get_color(im_ppm, self.colorInput)
         fits_image = self.create_fits(im_channel)
         dest = self._generate_destination(self.filename, self.colorInput)
         self.write_fits(fits_image, dest)
@@ -246,10 +258,10 @@ if __name__ == '__main__':
             """Dirty hack for Python 3."""
             return str(x, 'ascii')
 
-    colors = {0: "Red", 1: "Green", 2: "Blue"}
+    colors = {0: "Red", 1: "Green", 2: "Blue", 3: "Raw"}
     colorState = any([True for i in colors.keys() if i == colorInput])
     if not colorState:
-        print("ERROR: Color value can be set as 0:Red, 1:Green, 2:Blue.")
+        print("ERROR: Color value can be set as 0:Red, 1:Green, 2:Blue, 3:Raw")
         raise SystemExit
 
     cr2 = CR2FITS(cr2FileName, colorInput)
