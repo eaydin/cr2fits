@@ -4,6 +4,8 @@ cr2fits
 cr2fits.py version **2.1.0**  
 https://github.com/eaydin/cr2fits
 
+[![DOI](https://zenodo.org/badge/3470172.svg)](https://zenodo.org/badge/latestdoi/3470172)
+
 A script to convert RAW images (Canon, Nikon etc.) to FITS images. It extracts only one color channel of the RAW image, and writes the necessary EXIF information to the FITS header.
 
 # Dependencies
