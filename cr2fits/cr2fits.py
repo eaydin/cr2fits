@@ -49,9 +49,15 @@ except:
     print("Version: {0}".format(__version__))
     raise SystemExit
 
-if sys.version_info[0] == "3":
+if sys.version_info[0] > 2:
     # A nasty hack to work around xrange / range diff for Python 2vs3
     xrange = range
+    if sys.version_info[0] > 2:
+        basestring = str
+
+        def unicode(x):
+            return str(x, 'ascii')
+
 
 colors = {0: "Red", 1: "Green", 2: "Blue"}
 colorState = any([True for i in colors.keys() if i == colorInput])
@@ -67,10 +73,10 @@ try:
 
     # Getting the EXIF of CR2 with dcraw
     p = subprocess.Popen(["dcraw", "-i", "-v", cr2FileName], stdout=subprocess.PIPE)
-    cr2header = p.communicate()[0]
+    cr2header = p.communicate()[0].decode("utf-8")
 
     # Catching the Timestamp
-    m = re.search(b'(?<=Timestamp:).*', cr2header)
+    m = re.search('(?<=Timestamp:).*', cr2header)
     date1 = m.group(0).split()
     months = {
               'Jan': 1,
@@ -93,27 +99,27 @@ try:
     date = '{0:%Y-%m-%d %H:%M:%S}'.format(date)
 
     # Catching the Shutter Speed
-    m = re.search(b'(?<=Shutter:).*(?=sec)', cr2header)
+    m = re.search('(?<=Shutter:).*(?=sec)', cr2header)
     shutter = m.group(0).strip()
 
     # Catching the Aperture
-    m = re.search(b'(?<=Aperture: f/).*', cr2header)
+    m = re.search('(?<=Aperture: f/).*', cr2header)
     aperture = m.group(0).strip()
 
     # Catching the ISO Speed
-    m = re.search(b'(?<=ISO speed:).*', cr2header)
+    m = re.search('(?<=ISO speed:).*', cr2header)
     iso = m.group(0).strip()
 
     # Catching the Focal length
-    m = re.search(b'(?<=Focal length: ).*(?=mm)', cr2header)
+    m = re.search('(?<=Focal length: ).*(?=mm)', cr2header)
     focal = m.group(0).strip()
 
     # Catching the Original Filename of the cr2
-    m = re.search(b'(?<=Filename:).*', cr2header)
+    m = re.search('(?<=Filename:).*', cr2header)
     original_file = m.group(0).strip()
 
     # Catching the Camera Type
-    m = re.search(b'(?<=Camera:).*', cr2header)
+    m = re.search('(?<=Camera:).*', cr2header)
     camera = m.group(0).strip()
 
 except Exception as err:
