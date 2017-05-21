@@ -292,7 +292,7 @@ class cr2fits(object):
         self.im_ppm = None
         self.im_channel = None
 
-    def _read_cr2(self):
+    def read_cr2(self):
         """Run the dcraw command and read it as BytesIO."""
         if self.colorInput == 3:
             self.pbm_bytes = BytesIO(subprocess.check_output(["dcraw", "-D",
@@ -304,7 +304,7 @@ class cr2fits(object):
                                                               "-6", "-j", "-c",
                                                               self.filename]))
 
-    def _read_exif(self):
+    def read_exif(self):
         """Read the EXIT data from RAW image."""
         # Getting the EXIF of CR2 with dcraw
         p = subprocess.Popen(["dcraw", "-i", "-v", self.filename],
@@ -475,8 +475,8 @@ class cr2fits(object):
 
     def convert(self):
         """Convert RAW to FITS."""
-        self._read_cr2()
-        self._read_exif()
+        self.read_cr2()
+        self.read_exif()
         im_ppm = self.read_pbm(self.pbm_bytes)
         if self.colorInput == 3:
             im_channel = im_ppm
