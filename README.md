@@ -1,7 +1,7 @@
 cr2fits
 =======
 
-cr2fits.py version **2.0.0**  
+cr2fits.py version **2.1.0**  
 https://github.com/eaydin/cr2fits
 
 A script to convert RAW images (Canon, Nikon etc.) to FITS images. It extracts only one color channel of the RAW image, and writes the necessary EXIF information to the FITS header.
@@ -22,13 +22,16 @@ You can then copy `dcraw` to your path (ex. `/usr/local/bin`). In order to copy 
 `cr2fits.py <cr2-filename> <color-index>`
 
 - cr2-filename: This will obviously be the name of the file to convert.
-- color-index: Can take three values, either 0, 1, 2 which represent Red, Green, Blue respectively.
+- color-index: Can take one of four values, either 0, 1, 2, 3 which represent Red, Green, Blue and Unscaled Raw respectively.
 
 # Output
 
 The script will output the FITS file, added the color channel to the name of the output.
 
 # Change log
+
+## 2.1.0
+- Added support for unscaled raw output.
 
 ## 2.0.0
 - Added support for astropy
