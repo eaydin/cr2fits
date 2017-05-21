@@ -28,6 +28,7 @@ try:
     import re
     import datetime
     from netpbmfile import NetpbmFile
+    import os.path
     from io import BytesIO
 
 except Exception as err:
@@ -199,7 +200,18 @@ class CR2FITS(object):
             channel_name = "RAW"
         else:
             channel_name = self.colors[colorindex][0]
-        return filename.split('.')[0] + "-" + channel_name + ".fits"
+
+        filename = "".join(filename.split('.')[:-1])
+
+        writename = filename + "-" + channel_name + ".fits"
+        if os.path.isfile(writename):
+            for i in range(1, 9000000):
+                # Crashes after 9million files with same name but what the hell
+                writename = "{fn}-{ch}-{i}.fits".format(fn=filename,
+                                                        ch=channel_name, i=i)
+                if not os.path.isfile(writename):
+                    break
+        return writename
 
     def write_fits(self, hdu, destination):
         """
