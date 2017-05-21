@@ -32,6 +32,8 @@ The script will output the FITS file, added the color channel to the name of the
 
 ## 2.1.0
 - Added support for unscaled raw output.
+- Fixed output name detection fails with dot's (.) in the name.
+- Detects if output filename exists and gives alternative name
 
 ## 2.0.0
 - Added support for astropy
@@ -42,7 +44,5 @@ The script will output the FITS file, added the color channel to the name of the
 
 # todo
 - Add support for configparser
-- Detect if output filename exists and give alternative name
-- Output name detection fails with dot's (.) in the name, fix it
 - Add support for 3D FITS files: an idea from the fork by [@mireianievas](https://github.com/mireianievas)
 - Add support for multiple file inputs
