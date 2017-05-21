@@ -170,7 +170,7 @@ class CR2FITS(object):
         Primary HDU: Either PyFITS object or astropy.io.fits object
 
         """
-        hdu = fits.PrimaryHDU(self.im_channel)
+        hdu = fits.PrimaryHDU(image)
         hdu.header.set('OBSTIME', self.date)
         hdu.header.set('EXPTIME', self.shutter)
         hdu.header.set('APERTUR', self.aperture)
