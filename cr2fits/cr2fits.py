@@ -6,7 +6,7 @@ Details at https://github.com/eaydin/cr2fits
 """
 
 sourceweb = "https://github.com/eaydin/cr2fits"
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 try:
     import pyfits as fits
@@ -239,7 +239,7 @@ if __name__ == '__main__':
     except:
         print("./cr2fits.py <cr2filename> <color-index>")
         print("The <color-index> can take one of \
-              3 values: 0,1,2 for R,G,B respectively.")
+              4 values: 0,1,2,3 for R,G,B and Unscaled Raw respectively.")
         print("Example:\n\t$ ./cr2fits.py myimage.cr2 1")
         print("The above example will create 2 outputs.")
         print("\tmyimage.ppm: The PPM, which you can delete.")
