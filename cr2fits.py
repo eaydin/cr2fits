@@ -1,118 +1,105 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
+"""
+Convert RAW Camera images such as Canon Raw or Nikon Raw to FITS.
 
-# 3rd attempt
-# 15th Feb 2012, 09:38AM
-# http://eayd.in
-# http://github.com/eaydin/cr2fits
+Details at https://github.com/eaydin/cr2fits
+"""
 
-### This script is redistributable in anyway.
-### But it includes netpbmfile.py which is NOT written by M. Emre Aydin.
-### It has its own copyright and it has been stated in the source code.
-### BUT, there's nothing to worry about usage, laws etc.
-### Enjoy.
+sourceweb = "https://github.com/eaydin/cr2fits"
+__version__ = "2.1.0"
 
-sourceweb = "http://github.com/eaydin/cr2fits"
-version = "1.0.3"
+try:
+    import pyfits as fits
+    pyfits_loaded = True
+except ImportError:
+    pyfits_loaded = False
 
-try :    
+if not pyfits_loaded:
+    try:
+        from astopy.io import fits
+    except ImportError:
+        print("Error: Missing module. Either install PyFITS or Astropy")
+        raise SystemExit
+
+try:
+    import numpy as np
+    import subprocess
+    import sys
+    import re
+    import datetime
+    import os.path
+    from io import BytesIO
+    import math
     from copy import deepcopy
-    import numpy, pyfits, subprocess, sys, re, datetime, math
-    
-except :
-    print("ERROR : Missing some libraries!")
-    print("Check if you have the following :\n\tnumpy\n\tpyfits\n\tdcraw")
-    print("For details : %s" % sourceweb)
+
+except Exception as err:
+    print("Error: Missing some libraries!")
+    print("Error msg: {0}".format(str(err)))
     raise SystemExit
 
-### --- NETPBMFILE SOURCE CODE --- ###
-
-# Copyright (c) 2011, Christoph Gohlke
-# Copyright (c) 2011, The Regents of the University of California
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# * Redistributions of source code must retain the above copyright
-#   notice, this list of conditions and the following disclaimer.
-# * Redistributions in binary form must reproduce the above copyright
-#   notice, this list of conditions and the following disclaimer in the
-#   documentation and/or other materials provided with the distribution.
-# * Neither the name of the copyright holders nor the names of any
-#   contributors may be used to endorse or promote products derived
-#   from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-
-__all__ = ['NetpbmFile']
 
 class NetpbmFile(object):
     """Read and write Netpbm PAM, PBM, PGM, PPM, files."""
+
+    # This class was written by Christoph Gohlke,
+    # Modified by M. Emre Aydin to include in cr2fits
+    # NetpbmFile's LICENSE is below
+    # :Author:
+    #   `Christoph Gohlke <http://www.lfd.uci.edu/~gohlke/>`_
+    #
+    # :Organization:
+    #   Laboratory for Fluorescence Dynamics, University of California, Irvine
+    #
+    # :Version: 2016.02.24
+
+    # Copyright (c) 2011-2016, Christoph Gohlke
+    # Copyright (c) 2011-2016, The Regents of the University of California
+    # Produced at the Laboratory for Fluorescence Dynamics.
+    # All rights reserved.
+    #
+    # Redistribution and use in source and binary forms, with or without
+    # modification, are permitted provided that the following conditions are met:
+    #
+    # * Redistributions of source code must retain the above copyright
+    #   notice, this list of conditions and the following disclaimer.
+    # * Redistributions in binary form must reproduce the above copyright
+    #   notice, this list of conditions and the following disclaimer in the
+    #   documentation and/or other materials provided with the distribution.
+    # * Neither the name of the copyright holders nor the names of any
+    #   contributors may be used to endorse or promote products derived
+    #   from this software without specific prior written permission.
+    #
+    # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+    # AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    # ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+    # LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+    # CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+    # SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+    # INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+    # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+    # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+    # POSSIBILITY OF SUCH DAMAGE.
 
     _types = {b'P1': b'BLACKANDWHITE', b'P2': b'GRAYSCALE', b'P3': b'RGB',
               b'P4': b'BLACKANDWHITE', b'P5': b'GRAYSCALE', b'P6': b'RGB',
               b'P7 332': b'RGB', b'P7': b'RGB_ALPHA'}
 
-    def __init__(self, arg=None, **kwargs):
-        """Initialize instance from filename, open file, or numpy array."""
+    def __init__(self, filename):
+        """Initialize instance from filename or open file."""
         for attr in ('header', 'magicnum', 'width', 'height', 'maxval',
-                     'depth', 'tupltypes', '_filename', '_fileid', '_data'):
+                     'depth', 'tupltypes', '_filename', '_fh', '_data'):
             setattr(self, attr, None)
-        if arg is None:
-            self._fromdata([], **kwargs)
-        elif isinstance(arg, basestring):
-            self._fileid = open(arg, 'rb')
-            self._filename = arg
-            self._fromfile(self._fileid, **kwargs)
-        elif hasattr(arg, 'seek'):
-            self._fromfile(arg, **kwargs)
-            self._fileid = arg
+        if filename is None:
+            return
+        if hasattr(filename, 'seek'):
+            self._fh = filename
         else:
-            self._fromdata(arg, **kwargs)
+            self._fh = open(filename, 'rb')
+            self._filename = filename
 
-    def asarray(self, copy=True, cache=False, **kwargs):
-        """Return image data from file as numpy array."""
-        data = self._data
-        if data is None:
-            data = self._read_data(self._fileid, **kwargs)
-            if cache:
-                self._data = data
-            else:
-                return data
-        return deepcopy(data) if copy else data
-
-    def write(self, arg, **kwargs):
-        """Write instance to file."""
-        if hasattr(arg, 'seek'):
-            self._tofile(arg, **kwargs)
-        else:
-            with open(arg, 'wb') as fid:
-                self._tofile(fid, **kwargs)
-
-    def close(self):
-        """Close open file. Future asarray calls might fail."""
-        if self._filename and self._fileid:
-            self._fileid.close()
-            self._fileid = None
-
-    def __del__(self):
-        self.close()
-
-    def _fromfile(self, fileid):
-        """Initialize instance from open file."""
-        fileid.seek(0)
-        data = fileid.read(4096)
+        self._fh.seek(0)
+        data = self._fh.read(4096)
         if (len(data) < 7) or not (b'0' < data[1:2] < b'8'):
             raise ValueError("Not a Netpbm file:\n%s" % data[:32])
         try:
@@ -122,6 +109,73 @@ class NetpbmFile(object):
                 self._read_pnm_header(data)
             except Exception:
                 raise ValueError("Not a Netpbm file:\n%s" % data[:32])
+
+    @classmethod
+    def fromdata(cls, data, maxval=None):
+        """Initialize instance from numpy array."""
+        data = np.array(data, ndmin=2, copy=True)
+        if data.dtype.kind not in "uib":
+            raise ValueError("not an integer type: %s" % data.dtype)
+        if data.dtype.kind == 'i' and np.min(data) < 0:
+            raise ValueError("data out of range: %i" % np.min(data))
+        if maxval is None:
+            maxval = np.max(data)
+            maxval = 255 if maxval < 256 else 65535
+        if maxval < 0 or maxval > 65535:
+            raise ValueError("data out of range: %i" % maxval)
+        data = data.astype('u1' if maxval < 256 else '>u2')
+
+        self = cls(None)
+        self._data = data
+        if data.ndim > 2 and data.shape[-1] in (3, 4):
+            self.depth = data.shape[-1]
+            self.width = data.shape[-2]
+            self.height = data.shape[-3]
+            self.magicnum = b'P7' if self.depth == 4 else b'P6'
+        else:
+            self.depth = 1
+            self.width = data.shape[-1]
+            self.height = data.shape[-2]
+            self.magicnum = b'P5' if maxval > 1 else b'P4'
+        self.maxval = maxval
+        self.tupltypes = [self._types[self.magicnum]]
+        self.header = self._header()
+        return self
+
+    def asarray(self, copy=True, cache=False, byteorder='>'):
+        """Return image data from file as numpy array."""
+        data = self._data
+        if data is None:
+            data = self._read_data(self._fh, byteorder=byteorder)
+            if cache:
+                self._data = data
+            else:
+                return data
+        return deepcopy(data) if copy else data
+
+    def write(self, filename, pam=False):
+        """Write instance to file."""
+        if hasattr(filename, 'seek'):
+            self._tofile(filename, pam=pam)
+        else:
+            with open(filename, 'wb') as fh:
+                self._tofile(fh, pam=pam)
+
+    def close(self):
+        """Close open file. Future asarray calls might fail."""
+        if self._filename and self._fh:
+            self._fh.close()
+            self._fh = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def __str__(self):
+        """Return information about instance."""
+        return unicode(self.header)
 
     def _read_pam_header(self, data):
         """Read PAM header and initialize instance."""
@@ -153,75 +207,48 @@ class NetpbmFile(object):
         self.depth = 3 if self.magicnum in b"P3P6P7 332" else 1
         self.tupltypes = [self._types[self.magicnum]]
 
-    def _read_data(self, fileid, byteorder='>'):
+    def _read_data(self, fh, byteorder='>'):
         """Return image data from open file as numpy array."""
-        fileid.seek(len(self.header))
-        data = fileid.read()
+        fh.seek(len(self.header))
+        data = fh.read()
         dtype = 'u1' if self.maxval < 256 else byteorder + 'u2'
         depth = 1 if self.magicnum == b"P7 332" else self.depth
         shape = [-1, self.height, self.width, depth]
-        size = numpy.prod(shape[1:])
+        size = np.prod(shape[1:], dtype='int64')
         if self.magicnum in b"P1P2P3":
-            data = numpy.array(data.split(None, size)[:size], dtype)
+            data = np.array(data.split(None, size)[:size], dtype)
             data = data.reshape(shape)
         elif self.maxval == 1:
             shape[2] = int(math.ceil(self.width / 8))
-            data = numpy.frombuffer(data, dtype).reshape(shape)
-            data = numpy.unpackbits(data, axis=-2)[:, :, :self.width, :]
+            data = np.frombuffer(data, dtype).reshape(shape)
+            data = np.unpackbits(data, axis=-2)[:, :, :self.width, :]
         else:
-            data = numpy.frombuffer(data, dtype)
-            data = data[:size * (data.size // size)].reshape(shape)
+            size *= np.dtype(dtype).itemsize
+            data = np.frombuffer(data[:size], dtype).reshape(shape)
         if data.shape[0] < 2:
             data = data.reshape(data.shape[1:])
         if data.shape[-1] < 2:
             data = data.reshape(data.shape[:-1])
         if self.magicnum == b"P7 332":
-            rgb332 = numpy.array(list(numpy.ndindex(8, 8, 4)), numpy.uint8)
-            rgb332 *= [36, 36, 85]
-            data = numpy.take(rgb332, data, axis=0)
+            rgb332 = np.array(list(np.ndindex(8, 8, 4)), np.uint8)
+            rgb332 *= np.array([36, 36, 85], np.uint8)
+            data = np.take(rgb332, data, axis=0)
         return data
 
-    def _fromdata(self, data, maxval=None):
-        """Initialize instance from numpy array."""
-        data = numpy.array(data, ndmin=2, copy=True)
-        if data.dtype.kind not in "uib":
-            raise ValueError("not an integer type: %s" % data.dtype)
-        if data.dtype.kind == 'i' and numpy.min(data) < 0:
-            raise ValueError("data out of range: %i" % numpy.min(data))
-        if maxval is None:
-            maxval = numpy.max(data)
-            maxval = 255 if maxval < 256 else 65535
-        if maxval < 0 or maxval > 65535:
-            raise ValueError("data out of range: %i" % maxval)
-        data = data.astype('u1' if maxval < 256 else '>u2')
-        self._data = data
-        if data.ndim > 2 and data.shape[-1] in (3, 4):
-            self.depth = data.shape[-1]
-            self.width = data.shape[-2]
-            self.height = data.shape[-3]
-            self.magicnum = b'P7' if self.depth == 4 else b'P6'
-        else:
-            self.depth = 1
-            self.width = data.shape[-1]
-            self.height = data.shape[-2]
-            self.magicnum = b'P5' if maxval > 1 else b'P4'
-        self.maxval = maxval
-        self.tupltypes = [self._types[self.magicnum]]
-        self.header = self._header()
-
-    def _tofile(self, fileid, pam=False):
-        """Write Netbm file."""
-        fileid.seek(0)
-        fileid.write(self._header(pam))
+    def _tofile(self, fh, pam=False):
+        """Write Netpbm file."""
+        fh.seek(0)
+        fh.write(self._header(pam))
         data = self.asarray(copy=False)
         if self.maxval == 1:
-            data = numpy.packbits(data, axis=-1)
-        data.tofile(fileid)
+            data = np.packbits(data, axis=-1)
+        data.tofile(fh)
 
     def _header(self, pam=False):
         """Return file header as byte string."""
         if pam or self.magicnum == b'P7':
-            header = "\n".join(("P7",
+            header = "\n".join((
+                "P7",
                 "HEIGHT %i" % self.height,
                 "WIDTH %i" % self.width,
                 "DEPTH %i" % self.depth,
@@ -238,132 +265,259 @@ class NetpbmFile(object):
             header = bytes(header, 'ascii')
         return header
 
-    def __str__(self):
-        """Return information about instance."""
-        return unicode(self.header)
+
+class cr2fits(object):
+    """
+    The main CR2FITS class.
+
+    Creates an object to read raw images into Numpy Arrays
+    and convert them directly to FITS files
+    """
+
+    def __init__(self, filename, color):
+        """Initialize the object."""
+        self.filename = filename
+        self.colorInput = color
+        self.pbm_bytes = None
+        self.colors = {0: "Red", 1: "Green", 2: "Blue", 3: "Raw"}
+
+        self.date = None
+        self.shutter = None
+        self.aperture = None
+        self.iso = None
+        self.focal = None
+        self.original_file = None
+        self.camera = None
+
+        self.im_ppm = None
+        self.im_channel = None
+
+    def read_cr2(self):
+        """Run the dcraw command and read it as BytesIO."""
+        if self.colorInput == 3:
+            self.pbm_bytes = BytesIO(subprocess.check_output(["dcraw", "-D",
+                                                              "-4", "-j",
+                                                              "-c",
+                                                              self.filename]))
+        else:
+            self.pbm_bytes = BytesIO(subprocess.check_output(["dcraw", "-W",
+                                                              "-6", "-j", "-c",
+                                                              self.filename]))
+
+    def read_exif(self):
+        """Read the EXIT data from RAW image."""
+        # Getting the EXIF of CR2 with dcraw
+        p = subprocess.Popen(["dcraw", "-i", "-v", self.filename],
+                             stdout=subprocess.PIPE)
+        cr2header = p.communicate()[0].decode("utf-8")
+
+        # Catching the Timestamp
+        m = re.search('(?<=Timestamp:).*', cr2header)
+        date1 = m.group(0).split()
+        months = {
+                  'Jan': 1,
+                  'Feb': 2,
+                  'Mar': 3,
+                  'Apr': 4,
+                  'May': 5,
+                  'Jun': 6,
+                  'Jul': 7,
+                  'Aug': 8,
+                  'Sep': 9,
+                  'Oct': 10,
+                  'Nov': 11,
+                  'Dec': 12
+                  }
+
+        self.date = datetime.datetime(int(date1[4]), months[date1[1]],
+                                      int(date1[2]),
+                                      int(date1[3].split(':')[0]),
+                                      int(date1[3].split(':')[1]),
+                                      int(date1[3].split(':')[2]))
+        self.date = '{0:%Y-%m-%d %H:%M:%S}'.format(self.date)
+
+        # Catching the Shutter Speed
+        m = re.search('(?<=Shutter:).*(?=sec)', cr2header)
+        self.shutter = m.group(0).strip()
+
+        # Catching the Aperture
+        m = re.search('(?<=Aperture: f/).*', cr2header)
+        self.aperture = m.group(0).strip()
+
+        # Catching the ISO Speed
+        m = re.search('(?<=ISO speed:).*', cr2header)
+        self.iso = m.group(0).strip()
+
+        # Catching the Focal length
+        m = re.search('(?<=Focal length: ).*(?=mm)', cr2header)
+        self.focal = m.group(0).strip()
+
+        # Catching the Original Filename of the cr2
+        m = re.search('(?<=Filename:).*', cr2header)
+        self.original_file = m.group(0).strip()
+
+        # Catching the Camera Type
+        m = re.search('(?<=Camera:).*', cr2header)
+        self.camera = m.group(0).strip()
+
+    def read_pbm(self, filename):
+        """
+        PBM to Numpy Array.
+
+        Reads the NetPBM file and returns a Numpy array
+
+        arguments
+        ---------
+        filename: Filename or file-like object
+
+        returns
+        -------
+        Numpy Array
+
+        """
+        return NetpbmFile(filename).asarray()
+
+    def get_color(self, image, index):
+        """
+        Get specific color of the image.
+
+        arguments
+        ---------
+        image: Numpy Array
+        index: Integer, 0,1,2 for R,G,B respectively
+
+        returns
+        -------
+        Numpy Array
+
+        """
+        return image[:, :, index]
+
+    def create_fits(self, image):
+        """
+        Create FITS file from Numpy Array.
+
+        arguments
+        ---------
+        image: Numpy Array
+
+        returns
+        -------
+        Primary HDU: Either PyFITS object or astropy.io.fits object
+
+        """
+        hdu = fits.PrimaryHDU(image)
+        hdu.header.set('OBSTIME', self.date)
+        hdu.header.set('EXPTIME', self.shutter)
+        hdu.header.set('APERTUR', self.aperture)
+        hdu.header.set('ISO', self.iso)
+        hdu.header.set('FOCAL', self.focal)
+        hdu.header.set('ORIGIN', self.original_file)
+        hdu.header.set('FILTER', self.colors[self.colorInput])
+        hdu.header.set('CAMERA', self.camera)
+        hdu.header.add_comment('FITS File Created with cr2fits.py\
+                               available at {0}'.format(sourceweb))
+        hdu.header.add_comment('cr2fits.py version {0}'.format(__version__))
+        hdu.header.add_comment('EXPTIME is in seconds.')
+        hdu.header.add_comment('APERTUR is the ratio as in f/APERTUR')
+        hdu.header.add_comment('FOCAL is in mm')
+
+        return hdu
+
+    def _generate_destination(self, filename, colorindex):
+        """
+        Generate destination filename to output FITS.
+
+        Generates the filename to write. Will alternate if file already exists.
+
+        arguments
+        ---------
+        filename: input filename (string).
+        colorindex: the colorindex (integer).
+
+        returns
+        -------
+        filename: output filename (string).
+
+        """
+        if colorindex == 3:
+            channel_name = "RAW"
+        else:
+            channel_name = self.colors[colorindex][0]
+
+        filename = "".join(filename.split('.')[:-1])
+
+        writename = filename + "-" + channel_name + ".fits"
+        if os.path.isfile(writename):
+            for i in range(1, 9000000):
+                # Crashes after 9million files with same name but what the hell
+                writename = "{fn}-{ch}-{i}.fits".format(fn=filename,
+                                                        ch=channel_name, i=i)
+                if not os.path.isfile(writename):
+                    break
+        return writename
+
+    def write_fits(self, hdu, destination):
+        """
+        Write FITS object to destination.
+
+        arguments
+        ---------
+        hdu: FITS object
+        destination: Filepath to write the FITS file to (string).
+
+        returns
+        -------
+        Void
+
+        """
+        hdu.writeto(destination)
+
+    def convert(self):
+        """Convert RAW to FITS."""
+        self.read_cr2()
+        self.read_exif()
+        im_ppm = self.read_pbm(self.pbm_bytes)
+        if self.colorInput == 3:
+            im_channel = im_ppm
+        else:
+            im_channel = self.get_color(im_ppm, self.colorInput)
+        fits_image = self.create_fits(im_channel)
+        dest = self._generate_destination(self.filename, self.colorInput)
+        self.write_fits(fits_image, dest)
 
 
-if sys.version_info[0] > 2:
-    basestring = str
-    unicode = lambda x: str(x, 'ascii')
+if __name__ == '__main__':
 
-### --- END OF NETPBMFILE SOURCE CODE --- ###
+    try:
+        cr2FileName = sys.argv[1]
+        colorInput = int(sys.argv[2])  # 0=R 1=G 2=B
+    except:
+        print("./cr2fits.py <cr2filename> <color-index>")
+        print("The <color-index> can take one of \
+              4 values: 0,1,2,3 for R,G,B and Unscaled Raw respectively.")
+        print("Example:\n\t$ ./cr2fits.py myimage.cr2 1")
+        print("The above example will create a fits file.")
+        print("\tmyimage-G.fits: The FITS image in the Green channel, \
+              which is the purpose!")
+        print("For details: {0}".format(sourceweb))
+        print("Version: {0}".format(__version__))
+        raise SystemExit
 
-### CR2FITS SOURCE CODE ###
+    if sys.version_info[0] > 2:
+        # A nasty hack to work around xrange / range diff for Python 2vs3
+        xrange = range
+        basestring = str
 
+        def unicode(x):
+            """Dirty hack for Python 3."""
+            return str(x, 'ascii')
 
-try :
-    cr2FileName = sys.argv[1]
-    colorInput = int(sys.argv[2]) # 0=R 1=G 2=B
-except :
-    print("ERROR : You probably don't know how to use it?")
-    print("./cr2fits.py <cr2filename> <color-index>")
-    print("The <color-index> can take 3 values:0,1,2 for R,G,B respectively.")
-    print("Example :\n\t$ ./cr2fits.py myimage.cr2 1")
-    print("The above example will create 2 outputs.")
-    print("\tmyimage.ppm : The PPM, which you can delete.")
-    print("\tmyimage-G.fits : The FITS image in the Green channel, which is the purpose!")
-    print("For details : http://github.com/eaydin/cr2fits")
-    print("Version : %s" % version) 
-    raise SystemExit
+    colors = {0: "Red", 1: "Green", 2: "Blue", 3: "Raw"}
+    colorState = any([True for i in colors.keys() if i == colorInput])
+    if not colorState:
+        print("ERROR: Color value can be set as 0:Red, 1:Green, 2:Blue, 3:Raw")
+        raise SystemExit
 
-colors = {0:"Red",1:"Green",2:"Blue"}
-colorState = any([True for i in colors.keys() if i == colorInput])
-
-if colorState == False :
-    print("ERROR : Color value can be set as 0:Red, 1:Green, 2:Blue.")
-    raise SystemExit    
-
-print("Reading file %s...") % cr2FileName
-try : 
-    #Converting the CR2 to PPM
-    p = subprocess.Popen(["dcraw","-6","-j","-W",cr2FileName]).communicate()[0]
-
-    #Getting the EXIF of CR2 with dcraw
-    p = subprocess.Popen(["dcraw","-i","-v",cr2FileName],stdout=subprocess.PIPE)
-    cr2header = p.communicate()[0]
-
-    #Catching the Timestamp
-    m = re.search('(?<=Timestamp:).*',cr2header)
-    date1=m.group(0).split()
-    months = { 'Jan' : 1, 'Feb' : 2, 'Mar' : 3, 'Apr' : 4, 'May' : 5, 'Jun' : 6, 'Jul' : 7, 'Aug' : 8, 'Sep' : 9, 'Oct' : 10, 'Nov' : 11, 'Dec' : 12 }
-    date = datetime.datetime(int(date1[4]),months[date1[1]],int(date1[2]),int(date1[3].split(':')[0]),int(date1[3].split(':')[1]),int(date1[3].split(':')[2]))
-    date ='{0:%Y-%m-%d %H:%M:%S}'.format(date)
-
-    #Catching the Shutter Speed
-    m = re.search('(?<=Shutter:).*(?=sec)',cr2header)
-    shutter = m.group(0).strip()
-
-    #Catching the Aperture
-    m = re.search('(?<=Aperture: f/).*',cr2header)
-    aperture = m.group(0).strip()
-
-    #Catching the ISO Speed
-    m = re.search('(?<=ISO speed:).*',cr2header)
-    iso = m.group(0).strip()
-
-    #Catching the Focal length
-    m = re.search('(?<=Focal length: ).*(?=mm)',cr2header)
-    focal = m.group(0).strip()
-
-    #Catching the Original Filename of the cr2
-    m = re.search('(?<=Filename:).*',cr2header)
-    original_file = m.group(0).strip()
-    
-    #Catching the Camera Type
-    m = re.search('(?<=Camera:).*',cr2header)
-    camera = m.group(0).strip()
-    
-except :
-    print("ERROR : Something went wrong with dcraw. Do you even have dcraw?")
-    raise SystemExit
-
-print("Reading the PPM output...")
-try :
-    #Reading the PPM
-    ppm_name = cr2FileName.split('.')[0] + '.ppm'
-    im_ppm = NetpbmFile(ppm_name).asarray()
-except :
-    print("ERROR : Something went wrong while reading the PPM file.")
-    raise SystemExit
-
-print("Extracting %s color channels... (may take a while)" % colors[colorInput]) 
-try :
-    #Extracting the Green Channel Only
-    im_green = numpy.zeros((im_ppm.shape[0],im_ppm.shape[1]),dtype=numpy.uint16)
-    for row in xrange(0,im_ppm.shape[0]) :
-        for col in xrange(0,im_ppm.shape[1]) :
-            im_green[row,col] = im_ppm[row,col][colorInput]
-except :
-    print("ERROR : Something went wrong while extracting color channels.")
-    raise SystemExit
-
-print("Creating the FITS file...")
-try :
-#Creating the FITS File
-    hdu = pyfits.PrimaryHDU(im_green)
-    hdu.header.set('OBSTIME',date)
-    hdu.header.set('EXPTIME',shutter)
-    hdu.header.set('APERTUR',aperture)
-    hdu.header.set('ISO',iso)
-    hdu.header.set('FOCAL',focal)
-    hdu.header.set('ORIGIN',original_file)
-    hdu.header.set('FILTER',colors[colorInput])
-    hdu.header.set('CAMERA',camera)
-    hdu.header.add_comment('FITS File Created with cr2fits.py available at %s'%(sourceweb))
-    hdu.header.add_comment('cr2fits.py version %s'%(version))
-    hdu.header.add_comment('EXPTIME is in seconds.')
-    hdu.header.add_comment('APERTUR is the ratio as in f/APERTUR')
-    hdu.header.add_comment('FOCAL is in mm')    
-except : 
-    print("ERROR : Something went wrong while creating the FITS file.")
-    raise SystemExit
-
-print("Writing the FITS file...")
-try :
-    hdu.writeto(cr2FileName.split('.')[0]+"-"+colors[colorInput][0]+'.fits')
-except :
-    print("ERROR : Something went wrong while writing the FITS file. Maybe it already exists?")
-    raise SystemExit
-    
-print("Conversion successful!")
+    cr2 = cr2fits(cr2FileName, colorInput)
+    cr2.convert()
