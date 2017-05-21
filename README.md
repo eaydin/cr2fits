@@ -44,11 +44,11 @@ a.read_exit()
 # Convert dcraw output to Numpy Array using netpbm
 im_ppm = a.read_pbm(a.pbm_bytes)
 
-# Since we want only one channel (ex. Red) use get_color
-im_red = a.get_color(im_ppm, a.colorInput)
+# Since we want only one channel (ex. Blue) use get_color
+im_blue = a.get_color(im_ppm, a.colorInput)
 
-# Create FITS file from Red Image and EXIF data
-fits_image = a.create_fits(im_red)
+# Create FITS file from Blue Image and EXIF data
+fits_image = a.create_fits(im_blue)
 
 # If you want to write output, _generate_destination gets filename
 dest = a._generate_destination(a.filename, a.colorInput)
