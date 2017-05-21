@@ -66,7 +66,7 @@ class CR2FITS(object):
         """Run the dcraw command and read it as BytesIO."""
         if self.colorInput == 3:
             self.pbm_bytes = BytesIO(subprocess.check_output(["dcraw", "-D",
-                                                              "-6", "-W", "-j",
+                                                              "-4", "-j",
                                                               "-c",
                                                               self.filename]))
         else:
