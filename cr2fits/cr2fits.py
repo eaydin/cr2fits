@@ -425,6 +425,21 @@ class CR2FITS(object):
         return hdu
 
     def _generate_destination(self, filename, colorindex):
+        """
+        Generate destination filename to output FITS.
+
+        Generates the filename to write. Will alternate if file already exists.
+
+        arguments
+        ---------
+        filename: input filename (string).
+        colorindex: the colorindex (integer).
+
+        returns
+        -------
+        filename: output filename (string).
+        
+        """
         if colorindex == 3:
             channel_name = "RAW"
         else:
@@ -482,8 +497,7 @@ if __name__ == '__main__':
         print("The <color-index> can take one of \
               4 values: 0,1,2,3 for R,G,B and Unscaled Raw respectively.")
         print("Example:\n\t$ ./cr2fits.py myimage.cr2 1")
-        print("The above example will create 2 outputs.")
-        print("\tmyimage.ppm: The PPM, which you can delete.")
+        print("The above example will create a fits file.")
         print("\tmyimage-G.fits: The FITS image in the Green channel, \
               which is the purpose!")
         print("For details: {0}".format(sourceweb))
