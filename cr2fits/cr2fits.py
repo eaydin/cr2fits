@@ -177,7 +177,7 @@ class CR2FITS(object):
         hdu.header.set('ISO', self.iso)
         hdu.header.set('FOCAL', self.focal)
         hdu.header.set('ORIGIN', self.original_file)
-        hdu.header.set('FILTER', self.colors[colorInput])
+        hdu.header.set('FILTER', self.colors[self.colorInput])
         hdu.header.set('CAMERA', self.camera)
         hdu.header.add_comment('FITS File Created with cr2fits.py\
                                available at {0}'.format(sourceweb))
