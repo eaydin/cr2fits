@@ -16,7 +16,7 @@ except ImportError:
 
 if not pyfits_loaded:
     try:
-        from astopy.io import fits
+        from astropy.io import fits
     except ImportError:
         print("Error: Missing module. Either install PyFITS or Astropy")
         raise SystemExit
